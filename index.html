@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Puzzle Maker - URL Optimizer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+    <title>Puzzle Maker - TinyURL Ready</title>
     <style>
         :root { --primary: #6c5ce7; --bg: #f8f9fa; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 40px 0; box-sizing: border-box; }
-        .container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: fit-content; text-align: center; }
         #play-wrapper { display: flex; align-items: flex-start; gap: 25px; max-width: 95%; justify-content: center; }
+        .container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: fit-content; text-align: center; }
+        #hint-container { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        #hint-img-src { border-radius: 8px; display: block; border: 2px solid #ddd; }
+        .hidden { display: none; }
+        #preview-box { width: 100%; height: 180px; border: 2px dashed #ccc; border-radius: 12px; margin: 20px 0; display: flex; justify-content: center; align-items: center; cursor: pointer; overflow: hidden; }
+        #preview-img { width: 100%; height: 100%; object-fit: contain; }
         #puzzle-board { display: grid; gap: 4px; margin: 20px auto; background: #eee; padding: 10px; border-radius: 8px; width: fit-content; }
         .tile { cursor: move; background-repeat: no-repeat; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
-        .hidden { display: none; }
         button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
         .btn-green { background: #2ecc71; }
         .btn-blue { background: var(--primary); }
@@ -20,48 +23,62 @@
         .btn-done { background: #34495e; margin-top: 20px; }
         @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-8px); } 50% { transform: translateX(8px); } 75% { transform: translateX(-8px); } 100% { transform: translateX(0); } }
         .shake { animation: shake 0.3s ease-in-out; background: #e74c3c !important; }
-        #preview-box { width: 100%; height: 180px; border: 2px dashed #ccc; border-radius: 12px; margin: 20px 0; display: flex; justify-content: center; align-items: center; cursor: pointer; overflow: hidden; }
-        #preview-img { width: 100%; height: 100%; object-fit: contain; }
+        @media (max-width: 900px) { #play-wrapper { flex-direction: column; align-items: center; } #hint-container { order: -1; } }
     </style>
 </head>
 <body>
 
     <div id="setup-page" class="container">
-        <h1>🧩 Puzzle Link Optimizer</h1>
+        <h1>🧩 Custom Grid Puzzle</h1>
         <div id="preview-box" onclick="document.getElementById('imageInput').click()">
-            <span id="txt">Pilih Foto</span>
+            <span id="txt">Klik & Pilih Foto</span>
             <img id="preview-img" class="hidden">
         </div>
         <input type="file" id="imageInput" accept="image/*" class="hidden">
         
         <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
-            <input type="number" id="gridCol" value="3" min="2" max="5" style="width: 50px; padding: 5px;">
-            <span>X</span>
-            <input type="number" id="gridRow" value="3" min="2" max="5" style="width: 50px; padding: 5px;">
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <label>Kolom</label>
+                <input type="number" id="gridCol" value="3" min="2" max="10" style="width: 60px; padding: 8px; text-align: center;">
+            </div>
+            <div style="align-self: flex-end; padding-bottom: 10px; font-weight: bold;">X</div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <label>Baris</label>
+                <input type="number" id="gridRow" value="3" min="2" max="10" style="width: 60px; padding: 8px; text-align: center;">
+            </div>
         </div>
 
-        <button class="btn-green" onclick="copyLink()">📋 Salin Link Pendek</button>
-        <button class="btn-blue" onclick="openPreview()">👁️ Main Sekarang</button>
-        <p id="msg" style="font-size: 0.8rem; color: green;"></p>
+        <button class="btn-green" onclick="copyLink()">📋 Salin Link (Untuk TinyURL)</button>
+        <button class="btn-blue" onclick="openPreview()">👁️ Review</button>
+        <div id="shortener-links" class="hidden" style="margin-top: 10px; font-size: 0.85rem;">
+            Link tersalin! Paste di: <br>
+            <a href="https://tinyurl.com/app" target="_blank">TinyURL</a> | <a href="https://bitly.com" target="_blank">Bitly</a>
+        </div>
+        <p id="msg" style="font-size: 0.8rem; color: #e67e22;"></p>
     </div>
 
     <div id="play-page" class="hidden">
         <div id="play-wrapper">
             <div class="container">
-                <div id="timer-display">00:00</div>
+                <div id="timer-display">Waktu: 00:00</div>
+                <h2>Susun Puzzlenya!</h2>
                 <div id="puzzle-board"></div>
                 <button id="finishBtn" class="btn-done" onclick="handleFinish()">✅ Selesai</button>
             </div>
-            <div class="container" style="padding: 1rem;">
-                <span style="font-weight: bold; color: #666;">Panduan</span><br>
-                <img id="hint-img-src" style="border-radius: 8px; margin-top: 10px; border: 1px solid #ddd;">
+            <div id="hint-container">
+                <span>Gambar Panduan</span>
+                <img id="hint-img-src" src="" alt="Panduan">
             </div>
         </div>
     </div>
 
     <script>
         let imgData = "";
-        let timerInterval, seconds = 0, isFinished = false, dragged = null;
+        let linkData = ""; // Data gambar versi super kecil untuk URL
+        let dragged = null;
+        let seconds = 0;
+        let timerInterval;
+        let isFinished = false;
 
         document.getElementById('imageInput').onchange = (e) => {
             const reader = new FileReader();
@@ -69,14 +86,22 @@
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    // Paksa ukuran ke 120px untuk Link (Ukuran sangat krusial biar link pendek)
-                    canvas.width = 120; canvas.height = (img.height/img.width)*120;
-                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                    imgData = canvas.toDataURL('image/jpeg', 0.2); // Kualitas rendah khusus link
+                    const ctx = canvas.getContext('2d');
                     
+                    // 1. Gambar Bagus (untuk Review Lokal)
+                    canvas.width = 400; canvas.height = (img.height/img.width)*400;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    imgData = canvas.toDataURL('image/jpeg', 0.8);
+
+                    // 2. Gambar Super Kecil (untuk URL agar TinyURL/Bitly mau)
+                    canvas.width = 120; canvas.height = (img.height/img.width)*120;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    linkData = canvas.toDataURL('image/jpeg', 0.2); 
+
                     document.getElementById('preview-img').src = imgData;
                     document.getElementById('preview-img').classList.remove('hidden');
                     document.getElementById('txt').classList.add('hidden');
+                    localStorage.setItem('tempPuzzleImg', imgData);
                 };
                 img.src = ev.target.result;
             };
@@ -84,89 +109,101 @@
         };
 
         function copyLink() {
-            if (!imgData) return alert("Pilih foto!");
-            const c = document.getElementById('gridCol').value;
-            const r = document.getElementById('gridRow').value;
+            if (!linkData) return alert("Pilih foto dulu!");
+            const col = document.getElementById('gridCol').value;
+            const row = document.getElementById('gridRow').value;
             
-            // KOMPRESI TINGKAT TINGGI: Mengubah Base64 jadi kode super pendek
-            const compressed = LZString.compressToEncodedURIComponent(imgData);
-            const url = window.location.origin + window.location.pathname + `?p=${compressed}&c=${c}&r=${r}`;
+            // Generate URL menggunakan linkData (versi super kompres)
+            const url = window.location.origin + window.location.pathname + `?play=true&c=${col}&r=${row}&d=${encodeURIComponent(linkData)}`;
             
             navigator.clipboard.writeText(url).then(() => {
-                document.getElementById('msg').innerText = "✅ Link Siap! (Sudah Dikompres)";
-                setTimeout(() => document.getElementById('msg').innerText = "", 3000);
+                document.getElementById('msg').innerText = "Link panjang tersalin! Paste ke TinyURL/Bitly.";
+                document.getElementById('shortener-links').classList.remove('hidden');
+            }).catch(err => {
+                alert("Gagal menyalin. Coba gunakan browser lain.");
             });
         }
 
-        // --- Logika Render & Game ---
+        // --- Logika Game (Tetap Sama) ---
+        function openPreview() {
+            if (!imgData) return alert("Pilih foto dulu!");
+            const col = document.getElementById('gridCol').value;
+            const row = document.getElementById('gridRow').value;
+            window.open(`${window.location.pathname}?play=true&c=${col}&r=${row}`, '_blank');
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval); seconds = 0; isFinished = false;
+            timerInterval = setInterval(() => {
+                seconds++;
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer-display').innerText = `Waktu: ${mins}:${secs}`;
+            }, 1000);
+        }
+
         function handleFinish() {
             if (isFinished) return;
+            const btn = document.getElementById('finishBtn');
             const tiles = Array.from(document.querySelectorAll('.tile'));
-            const win = tiles.every(t => t.dataset.currentIndex === t.dataset.targetIndex);
-            if (win) {
+            const isCorrect = tiles.every(tile => parseInt(tile.dataset.currentIndex) === parseInt(tile.dataset.targetIndex));
+            if (isCorrect) {
                 clearInterval(timerInterval); isFinished = true;
                 document.getElementById('timer-display').style.background = "#2ecc71";
+                btn.style.background = "#2ecc71"; btn.innerText = "🎉 Berhasil!";
             } else {
-                document.getElementById('finishBtn').classList.add('shake');
-                setTimeout(() => document.getElementById('finishBtn').classList.remove('shake'), 300);
+                btn.classList.add('shake'); setTimeout(() => btn.classList.remove('shake'), 300);
             }
         }
 
-        function render(data, cols, rows) {
+        function renderPuzzle(data, cols, rows) {
             document.getElementById('setup-page').classList.add('hidden');
             document.getElementById('play-page').classList.remove('hidden');
-            
-            // Timer logic
-            timerInterval = setInterval(() => {
-                seconds++;
-                const m = Math.floor(seconds/60).toString().padStart(2,'0');
-                const s = (seconds%60).toString().padStart(2,'0');
-                document.getElementById('timer-display').innerText = `${m}:${s}`;
-            }, 1000);
+            startTimer();
+            cols = parseInt(cols); rows = parseInt(rows);
+            const baseTileSize = 75; const gap = 4;
+            const hintImg = document.getElementById('hint-img-src');
+            hintImg.style.width = `${(baseTileSize * cols) + (gap * (cols - 1))}px`;
+            hintImg.style.height = `${(baseTileSize * rows) + (gap * (rows - 1))}px`;
+            hintImg.src = data;
 
             const board = document.getElementById('puzzle-board');
-            const hint = document.getElementById('hint-img-src');
-            hint.src = data; hint.style.width = "150px";
-            
-            board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-            let pieces = Array.from({length: cols*rows}, (_, i) => i);
+            board.innerHTML = ''; board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            let pieces = Array.from({length: cols * rows}, (_, i) => i);
             let shuffled = [...pieces].sort(() => Math.random() - 0.5);
 
-            shuffled.forEach((orig, curr) => {
+            shuffled.forEach((originalIndex, currentIndex) => {
                 const tile = document.createElement('div');
                 tile.className = 'tile'; tile.draggable = true;
-                tile.style.width = '70px'; tile.style.height = '70px';
+                tile.style.width = `${baseTileSize}px`; tile.style.height = `${baseTileSize}px`;
                 tile.style.backgroundImage = `url(${data})`;
-                tile.style.backgroundSize = `${cols*100}% ${rows*100}%`;
-                tile.dataset.targetIndex = curr; tile.dataset.currentIndex = orig;
-                
-                const r = Math.floor(orig/cols), c = orig%cols;
-                tile.style.backgroundPosition = `${cols>1?(c/(cols-1))*100:0}% ${rows>1?(r/(rows-1))*100:0}%`;
+                tile.style.backgroundSize = `${cols * 100}% ${rows * 100}%`;
+                tile.dataset.targetIndex = currentIndex;
+                tile.dataset.currentIndex = originalIndex;
+                const rOrig = Math.floor(originalIndex / cols);
+                const cOrig = originalIndex % cols;
+                tile.style.backgroundPosition = `${cols > 1 ? (cOrig / (cols - 1)) * 100 : 0}% ${rows > 1 ? (rOrig / (rows - 1)) * 100 : 0}%`;
 
-                tile.addEventListener('dragstart', e => dragged = tile);
-                tile.addEventListener('dragover', e => e.preventDefault());
+                tile.addEventListener('dragstart', (e) => { if(!isFinished) dragged = tile; });
+                tile.addEventListener('dragover', (e) => e.preventDefault());
                 tile.addEventListener('drop', function() {
-                    let b = this.style.backgroundPosition, i = this.dataset.currentIndex;
+                    if (this === dragged || isFinished) return;
+                    let tmpBg = this.style.backgroundPosition;
                     this.style.backgroundPosition = dragged.style.backgroundPosition;
+                    dragged.style.backgroundPosition = tmpBg;
+                    let tmpIdx = this.dataset.currentIndex;
                     this.dataset.currentIndex = dragged.dataset.currentIndex;
-                    dragged.style.backgroundPosition = b;
-                    dragged.dataset.currentIndex = i;
+                    dragged.dataset.currentIndex = tmpIdx;
                 });
                 board.appendChild(tile);
             });
         }
 
-        function openPreview() {
-            if (!imgData) return alert("Pilih foto!");
-            render(imgData, document.getElementById('gridCol').value, document.getElementById('gridRow').value);
-        }
-
         window.onload = () => {
-            const params = new URLSearchParams(window.location.search);
-            if (params.has('p')) {
-                // DEKOMPRESI: Mengembalikan kode pendek jadi gambar lagi
-                const decoded = LZString.decompressFromEncodedURIComponent(params.get('p'));
-                render(decoded, params.get('c'), params.get('r'));
+            const p = new URLSearchParams(window.location.search);
+            if (p.has('play')) {
+                let data = p.has('d') ? decodeURIComponent(p.get('d')) : localStorage.getItem('tempPuzzleImg');
+                if (data) renderPuzzle(data, p.get('c'), p.get('r'));
             }
         };
     </script>
