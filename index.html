@@ -82,7 +82,6 @@
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    // KOMPRESI: Perkecil resolusi gambar agar URL tidak terlalu panjang
                     const maxDim = 300; 
                     let width = img.width;
                     let height = img.height;
@@ -96,7 +95,6 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Gunakan kualitas 0.5 (50%) untuk menghemat karakter URL
                     imgData = canvas.toDataURL('image/jpeg', 0.5);
                     document.getElementById('preview-img').src = imgData;
                     document.getElementById('preview-img').classList.remove('hidden');
@@ -119,14 +117,19 @@
             if (!imgData) return alert("Pilih foto dulu!");
             const col = document.getElementById('gridCol').value;
             const row = document.getElementById('gridRow').value;
-            // Gunakan Origin + Pathname agar link tetap valid di server lokal maupun hosting
             const url = window.location.origin + window.location.pathname + `?play=true&c=${col}&r=${row}&d=${encodeURIComponent(imgData)}`;
             
             navigator.clipboard.writeText(url).then(() => {
-                document.getElementById('msg').innerText = "✅ Link tersalin! (Ukuran telah dioptimalkan)";
-                setTimeout(() => document.getElementById('msg').innerText = "", 3000);
+                document.getElementById('msg').innerText = "✅ Link tersalin! Membuka Bitly...";
+                
+                // Shortcut: Langsung buka Bitly di tab baru untuk memudahkan penyingkatan
+                // Jika URL terlalu panjang untuk Bitly (biasanya > 2000 chars), TinyURL seringkali lebih ramah
+                const shortenerUrl = url.length > 2000 ? "https://tinyurl.com/app" : "https://bitly.com/";
+                window.open(shortenerUrl, '_blank');
+
+                setTimeout(() => document.getElementById('msg').innerText = "", 4000);
             }).catch(err => {
-                alert("Gagal menyalin link. Gunakan foto dengan ukuran lebih kecil.");
+                alert("Gagal menyalin link.");
             });
         }
 
