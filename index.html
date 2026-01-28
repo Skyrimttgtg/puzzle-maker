@@ -82,32 +82,22 @@
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    
-                    // PENURUNAN RESOLUSI: Maksimal 360p (360px di sisi terpanjang)
-                    const maxResolution = 360; 
+                    // KOMPRESI: Perkecil resolusi gambar agar URL tidak terlalu panjang
+                    const maxDim = 300; 
                     let width = img.width;
                     let height = img.height;
-
                     if (width > height) {
-                        if (width > maxResolution) {
-                            height *= maxResolution / width;
-                            width = maxResolution;
-                        }
+                        if (width > maxDim) { height *= maxDim / width; width = maxDim; }
                     } else {
-                        if (height > maxResolution) {
-                            width *= maxResolution / height;
-                            height = maxResolution;
-                        }
+                        if (height > maxDim) { width *= maxDim / height; height = maxDim; }
                     }
-
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Gunakan kualitas 0.4 untuk memastikan ukuran Base64 aman bagi URL
-                    imgData = canvas.toDataURL('image/jpeg', 0.4);
-                    
+                    // Gunakan kualitas 0.5 (50%) untuk menghemat karakter URL
+                    imgData = canvas.toDataURL('image/jpeg', 0.5);
                     document.getElementById('preview-img').src = imgData;
                     document.getElementById('preview-img').classList.remove('hidden');
                     document.getElementById('txt').classList.add('hidden');
@@ -125,28 +115,19 @@
             window.open(`${window.location.pathname}?play=true&c=${col}&r=${row}`, '_blank');
         }
 
-        async function copyLink() {
+        function copyLink() {
             if (!imgData) return alert("Pilih foto dulu!");
             const col = document.getElementById('gridCol').value;
             const row = document.getElementById('gridRow').value;
-            const fullUrl = window.location.origin + window.location.pathname + `?play=true&c=${col}&r=${row}&d=${encodeURIComponent(imgData)}`;
+            // Gunakan Origin + Pathname agar link tetap valid di server lokal maupun hosting
+            const url = window.location.origin + window.location.pathname + `?play=true&c=${col}&r=${row}&d=${encodeURIComponent(imgData)}`;
             
-            try {
-                // Mencoba memendekkan link secara otomatis agar rapi
-                const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(fullUrl)}`);
-                const finalLink = await response.text();
-                
-                navigator.clipboard.writeText(finalLink).then(() => {
-                    document.getElementById('msg').innerText = "✅ Link TinyURL tersalin!";
-                    setTimeout(() => document.getElementById('msg').innerText = "", 3000);
-                });
-            } catch (e) {
-                // Fallback jika API tinyurl gagal, copy link asli (yang sekarang sudah lebih pendek karena 360p)
-                navigator.clipboard.writeText(fullUrl).then(() => {
-                    document.getElementById('msg').innerText = "✅ Link tersalin!";
-                    setTimeout(() => document.getElementById('msg').innerText = "", 3000);
-                });
-            }
+            navigator.clipboard.writeText(url).then(() => {
+                document.getElementById('msg').innerText = "✅ Link tersalin! (Ukuran telah dioptimalkan)";
+                setTimeout(() => document.getElementById('msg').innerText = "", 3000);
+            }).catch(err => {
+                alert("Gagal menyalin link. Gunakan foto dengan ukuran lebih kecil.");
+            });
         }
 
         function startTimer() {
